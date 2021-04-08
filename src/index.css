@@ -1,4 +1,5 @@
 body {
+  padding: 10px;
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
@@ -10,4 +11,29 @@ body {
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
+}
+
+
+input,
+textarea {
+  font-size: 10px;
+  width: 300px;
+  height: 100px;
+  border: 1px solid #000;
+  margin: 0 0 10px;
+  padding: 0;
+  display: block;
+}
+
+input {
+  height: auto;
+}
+
+button {
+  border: 1px solid #000;
+  display: block;
+}
+
+td {
+  border: 1px solid gray;
 }
