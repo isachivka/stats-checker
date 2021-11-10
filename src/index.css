@@ -14,26 +14,26 @@ code {
 }
 
 
-input,
-textarea {
-  font-size: 10px;
-  width: 300px;
-  height: 100px;
-  border: 1px solid #000;
-  margin: 0 0 10px;
-  padding: 0;
-  display: block;
-}
+/*input,*/
+/*textarea {*/
+/*  font-size: 10px;*/
+/*  width: 300px;*/
+/*  height: 100px;*/
+/*  border: 1px solid #000;*/
+/*  margin: 0 0 10px;*/
+/*  padding: 0;*/
+/*  display: block;*/
+/*}*/
 
-input {
-  height: auto;
-}
+/*input {*/
+/*  height: auto;*/
+/*}*/
 
-button {
-  border: 1px solid #000;
-  display: block;
-}
+/*button {*/
+/*  border: 1px solid #000;*/
+/*  display: block;*/
+/*}*/
 
-td {
-  border: 1px solid gray;
-}
+/*td {*/
+/*  border: 1px solid gray;*/
+/*}*/

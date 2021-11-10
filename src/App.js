@@ -1,110 +1,120 @@
-import { useMemo, useState, useCallback } from 'react';
-import { v4 } from 'uuid';
-import Generator from './Generator';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
+import random from 'lodash/random';
+import abTest from 'ab-test-result';
 
-function App() {
-  const [runner, toggle] = useState([]);
-  const [count, setCount] = useState(100);
-  const [experimentsText, setExperiments] = useState(`[
+const conf = 0.05 / 2;
 
-[50, 50]
-
-]`);
-
-  const experiments = useMemo(() => {
-    try {
-      return JSON.parse(experimentsText);
-    } catch (e) {
-      return [[100]];
-    }
-  }, [experimentsText]);
-
+const useInput = (init) => {
+  const [val, setVal] = useState(init);
   const onChange = useCallback((e) => {
-    setCount(+e.target.value);
-  }, [setCount])
+    setVal(e.target.value);
+  }, [setVal]);
 
-  const onChangeExp = useCallback((e) => {
-    setExperiments(e.target.value);
-  }, [setExperiments]);
+  return [val, onChange];
+}
 
-  const onRun = useCallback(() => {
-    toggle([{ count, experiments, id: v4() }, ...runner]);
-  }, [toggle, runner, count, experiments]);
+const ranges = [
+  0.025,
+  0.03,
+  0.04,
+];
 
-  const onClear = useCallback(() => {
-    toggle([]);
-  });
+const Run = React.memo((props) => {
+  const { percent, count, launches } = props.run;
+  const experiments = useMemo(() => {
+    const runs = [];
+    for (let launchN = 0; launchN < launches; launchN++) {
+      const branches = [
+        { positive: 0, negative: 0 },
+        { positive: 0, negative: 0 },
+      ];
 
-  const onRerun = useCallback(() => {
-    toggle([{ count, experiments, id: v4() }]);
-  })
+      const positiveCount = count * percent / 100;
 
-  // const events = useMemo(() => {
-  //   return generateEvent(count, config);
-  // }, [count, experiments]);
-  //
-  // const exp = useMemo(() => {
-  //   return generateDistribution(experiments);
-  // }, [experiments]);
-  //
-  // const allocation = useMemo(() => {
-  //   return allocateEvents(exp, events);
-  // }, [exp, events]);
-  //
-  // const table = useMemo(() => {
-  //   return allocation;
-  // }, [allocation]);
+      for (let i = 0; i < positiveCount; i++) {
+        branches[random(0, 1)].positive += 1;
+      }
+
+      const negativeCount = count - positiveCount;
+
+      for (let i = 0; i < negativeCount; i++) {
+        branches[random(0, 1)].negative += 1;
+      }
+
+      runs.push(branches);
+    }
+
+    return runs;
+  }, [percent, count]);
+
+  const pValues = useMemo(() => {
+    return experiments.map((experiment) => {
+      const data = {
+        controlVisits: experiment[0].negative + experiment[0].positive,
+        controlConversions: experiment[0].positive,
+        challengerVisits: experiment[1].negative + experiment[1].positive,
+        challengerConversions: experiment[1].positive,
+      };
+      const statistic = abTest.calcResult(data, conf);
+      const pValue = 1 - statistic.statistics.pValue;
+      return pValue
+    });
+  }, [experiments])
+
+  const pValuesDistribution = useMemo(() => {
+    const distribution = ranges.reduce((acc, range) => {
+      let countInRange = 0;
+
+      pValues.forEach((pVal) => {
+        if (pVal <= range || pVal >= 1 - range) {
+          countInRange += 1;
+        }
+      })
+
+      acc[range] = (countInRange / launches * 100).toFixed(2) + '%';
+
+      return acc;
+    }, {});
+
+    return distribution;
+  }, [pValues, launches]);
+
+  console.log(pValuesDistribution);
+
+  return null;
+})
+
+export default function App() {
+  const runIndex = useRef(0);
+  const [percent, onChangePercent] = useInput(3);
+  const [count, onChangeCount] = useInput(100000);
+  const [launches, onChangeLaunches] = useInput(1000);
+  const [database, setDb] = useState([]);
+
+  const onClickRun = useCallback(() => {
+    setDb([
+      ...database,
+      {
+        id: runIndex.current,
+        percent,
+        count,
+        launches,
+      },
+    ]);
+    runIndex.current++;
+  }, [database, setDb, percent, count, launches]);
 
   return (
     <>
       <div>
-        <input type="text" value={count} onChange={onChange} />
+        <div><input type="text" onChange={onChangePercent} value={percent} /> %</div>
+        <div><input type="text" onChange={onChangeCount} value={count} /> count</div>
+        <div><input type="text" onChange={onChangeLaunches} value={launches} /> launches</div>
+        <button onClick={onClickRun}>Run</button>
       </div>
-      <div>
-        <textarea value={experimentsText} onChange={onChangeExp} />
-      </div>
-      <div>
-        <button onClick={onRun}>run</button>
-        <button onClick={onClear}>clear</button>
-        <button onClick={onRerun}>rerun</button>
-      </div>
-
-      <hr />
-
-      <table>
-        <tbody>
-          {runner.map(run => (
-            <Generator count={run.count} config={run.experiments} key={run.id} id={run.id} />
-          ))}
-        </tbody>
-      </table>
-
-      {/*<table>*/}
-      {/*  <tbody>*/}
-      {/*    <tr>*/}
-      {/*      <td>%</td>*/}
-      {/*      <td>count</td>*/}
-      {/*      {config.map((chance) => (*/}
-      {/*        <td key={chance}>event ({chance}%)</td>*/}
-      {/*      ))}*/}
-      {/*    </tr>*/}
-      {/*    {allocation.map((experiment, i) => (*/}
-      {/*      <>*/}
-      {/*        <tr><td colSpan={4}><hr/></td></tr>*/}
-      {/*        {experiment.map((branchEvents, k) => (*/}
-      {/*          <Experiment*/}
-      {/*            index={k}*/}
-      {/*            experiment={experiment}*/}
-      {/*            events={branchEvents}*/}
-      {/*            exp={experiments[i][k]}*/}
-      {/*          />*/}
-      {/*        ))}*/}
-      {/*      </>*/}
-      {/*    ))}*/}
-      {/*  </tbody>*/}
-      {/*</table>*/}
+      {database.map((run) => (
+        <Run key={run.id} run={run} />
+      ))}
     </>
   );
 }
-
-export default App;
